@@ -7,7 +7,7 @@ This is a sample script to create GitHub issues with CSV using GitHub CLI.
 - Python 3.9
 - [GitHub CLI](https://cli.github.com/)
 
-No PyPI package is not required.
+No PyPI package is required.
 
 ## Usage
 
