@@ -20,6 +20,12 @@ Milestone 2,Task 4
 Milestone 2,Task 5
 """
 
+# Type aliases
+Program = str
+CommandArgs = list[str]
+Command = tuple[Program, CommandArgs]
+CommandOutput = tuple[str, str]
+
 
 async def main() -> None:
     """Main function"""
@@ -30,16 +36,10 @@ async def main() -> None:
         build_command_(title=title, milestone=milestone) for milestone, title in issues
     ]
 
-    for coro in asyncio.as_completed(
-        [run(program, args) for program, args in commands]
-    ):
-        stdout, stderr = await coro
-        print(stdout.rstrip())
-        if stderr:
-            print(stderr.rstrip(), file=sys.stderr)
+    await run_all(commands)
 
 
-def read_data(csv_text: str) -> Generator[tuple, None, None]:
+def read_data(csv_text: str) -> Generator[list[str], None, None]:
     """Load issue data from CSV text"""
     reader = csv.reader(io.StringIO(csv_text))
     for row in reader:
@@ -50,7 +50,7 @@ def read_data(csv_text: str) -> Generator[tuple, None, None]:
 
 def build_command(
     repo: str, title: str, body: str, milestone: str, project: str
-) -> tuple[str, list[str]]:
+) -> Command:
     """Build command to create an issue with GitHub CLI"""
     return (
         "gh",
@@ -71,8 +71,18 @@ def build_command(
     )
 
 
-async def run(program: str, args: list[str]) -> tuple[str, str]:
+async def run_all(commands: list[Command]):
+    """Run multiple commands"""
+    for coro in asyncio.as_completed([run(command) for command in commands]):
+        stdout, stderr = await coro
+        print(stdout.rstrip())
+        if stderr:
+            print(stderr.rstrip(), file=sys.stderr)
+
+
+async def run(command: Command) -> CommandOutput:
     """Run a subprocess"""
+    program, args = command
     print(program, *args)
     proc = await create_subprocess_exec(program, *args, stdout=PIPE, stderr=PIPE)
     stdout, stderr = await proc.communicate()
