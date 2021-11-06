@@ -1,5 +1,6 @@
 """Create GitHub issues with CSV using GitHub CLI """
 
+import argparse
 import asyncio
 import csv
 import io
@@ -7,6 +8,7 @@ import sys
 from asyncio import create_subprocess_exec
 from asyncio.subprocess import PIPE
 from asyncio.tasks import as_completed
+from pprint import pprint
 from functools import partial
 from typing import Generator
 
@@ -29,6 +31,9 @@ CommandOutput = tuple[str, str]
 
 async def main() -> None:
     """Main function"""
+    args = get_args()
+    dry_run = args.dry_run
+
     issues = [x for x in read_data(DATA)]
 
     build_command_ = partial(build_command, body="", repo=REPO, project=PROJECT)
@@ -36,7 +41,18 @@ async def main() -> None:
         build_command_(title=title, milestone=milestone) for milestone, title in issues
     ]
 
+    if dry_run:
+        pprint(commands)
+        return
+
     await run_all(commands)
+
+
+def get_args() -> argparse.Namespace:
+    """Get CLI args"""
+    parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument('--dry-run', action='store_true')
+    return parser.parse_args()
 
 
 def read_data(csv_text: str) -> Generator[list[str], None, None]:
